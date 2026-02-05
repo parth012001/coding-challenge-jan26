@@ -1,16 +1,17 @@
 // Setup type definitions for built-in Supabase Runtime APIs
 import "@supabase/functions-js/edge-runtime.d.ts";
 import { generateApple, communicateAttributes, communicatePreferences } from "../_shared/generateFruit.ts";
+import { getDb, storeFruit, findMatches } from "../_shared/surrealClient.ts";
 
 /**
  * Get Incoming Apple Edge Function
  *
  * Task Flow:
- * 1. Generate a new apple instance
- * 2. Capture the new apple's communication (attributes and preferences)
- * 3. Store the new apple in SurrealDB
- * 4. Match the new apple to existing oranges
- * 5. Communicate matching results back to the apple via LLM
+ * 1. Generate a new apple instance ✅
+ * 2. Capture the new apple's communication (attributes and preferences) ✅
+ * 3. Store the new apple in SurrealDB ✅
+ * 4. Match the new apple to existing oranges ✅
+ * 5. Communicate matching results back to the apple via LLM (TODO)
  */
 
 // CORS headers for local development
@@ -26,28 +27,70 @@ Deno.serve(async (req) => {
     return new Response("ok", { headers: corsHeaders });
   }
 
+  let db;
+
   try {
     // Step 1: Generate a new apple instance
     const apple = generateApple();
 
     // Step 2: Capture the apple's communication
-    // The apple expresses its attributes and preferences
     const appleAttrs = communicateAttributes(apple);
     const applePrefs = communicatePreferences(apple);
 
-    // Step 3: Store the new apple in SurrealDB
-    // TODO: Implement apple storage logic
+    // Step 3: Connect to SurrealDB and store the new apple
+    db = await getDb();
+    const storedApple = await storeFruit(
+      db,
+      "apple",
+      apple.attributes,
+      apple.preferences
+    );
 
     // Step 4: Match the new apple to existing oranges
-    // TODO: Implement apple matching logic
+    const matches = await findMatches(
+      db,
+      "apple",
+      apple.preferences,
+      apple.attributes
+    );
 
-    // Step 5: Communicate matching results via LLM
-    // TODO: Implement matching results communication logic
+    // Get top 3 matches with detailed breakdowns
+    const topMatches = matches.slice(0, 3).map((match) => ({
+      id: match.fruit.id,
+      score: match.score,
+      ourScore: match.ourScore,
+      theirScore: match.theirScore,
+      attributes: match.fruit.attributes,
+      preferences: match.fruit.preferences,
+      breakdown: {
+        our: match.ourBreakdown,
+        their: match.theirBreakdown,
+      },
+    }));
 
-    return new Response(JSON.stringify({ message: "Apple received" }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-      status: 200,
-    });
+    // Step 5: TODO - Communicate matching results via LLM
+    // For now, return structured data
+
+    return new Response(
+      JSON.stringify({
+        success: true,
+        apple: {
+          id: storedApple.id,
+          attributes: apple.attributes,
+          preferences: apple.preferences,
+          communication: {
+            attributes: appleAttrs,
+            preferences: applePrefs,
+          },
+        },
+        matches: topMatches,
+        totalCandidates: matches.length,
+      }),
+      {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 200,
+      }
+    );
   } catch (error) {
     console.error("Error processing incoming apple:", error);
     return new Response(
@@ -60,5 +103,9 @@ Deno.serve(async (req) => {
         status: 500,
       }
     );
+  } finally {
+    if (db) {
+      await db.close();
+    }
   }
 });

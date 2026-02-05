@@ -47,3 +47,6 @@ coverage/
 *.log
 .vercel
 
+# Personal notes
+ALGORITHM_DESIGN.md
+
