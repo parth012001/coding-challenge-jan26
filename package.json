@@ -7,10 +7,17 @@
     "supabase": "supabase",
     "supabase:start": "supabase start",
     "supabase:stop": "supabase stop",
-    "supabase:functions:serve": "supabase functions serve"
+    "supabase:functions:serve": "supabase functions serve",
+    "seed": "npx ts-node scripts/seed.ts"
+  },
+  "dependencies": {
+    "surrealdb": "^1.0.0"
   },
   "devDependencies": {
-    "supabase": "^2.23.4"
+    "supabase": "^2.23.4",
+    "typescript": "^5.0.0",
+    "ts-node": "^10.9.2",
+    "@types/node": "^20.0.0"
   }
 }
 
