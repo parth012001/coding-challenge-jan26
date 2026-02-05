@@ -139,7 +139,7 @@ export async function storeFruit(
     createdAt: new Date().toISOString(),
   });
 
-  return (result as FruitRecord[])[0];
+  return (result as unknown as FruitRecord[])[0];
 }
 
 /**
@@ -147,7 +147,7 @@ export async function storeFruit(
  */
 export async function getFruits(db: Surreal, type: "apple" | "orange"): Promise<FruitRecord[]> {
   const results = await db.select(type);
-  return results as FruitRecord[];
+  return results as unknown as FruitRecord[];
 }
 
 // =============================================================================
