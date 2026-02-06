@@ -2,6 +2,7 @@
 import "@supabase/functions-js/edge-runtime.d.ts";
 import { generateApple, communicateAttributes, communicatePreferences } from "../_shared/generateFruit.ts";
 import { getDb, storeFruit, findMatches } from "../_shared/surrealClient.ts";
+import { generateMatchExplanations } from "../_shared/openaiClient.ts";
 
 /**
  * Get Incoming Apple Edge Function
@@ -11,7 +12,7 @@ import { getDb, storeFruit, findMatches } from "../_shared/surrealClient.ts";
  * 2. Capture the new apple's communication (attributes and preferences) ✅
  * 3. Store the new apple in SurrealDB ✅
  * 4. Match the new apple to existing oranges ✅
- * 5. Communicate matching results back to the apple via LLM (TODO)
+ * 5. Communicate matching results back to the apple via LLM ✅
  */
 
 // CORS headers for local development
@@ -68,8 +69,22 @@ Deno.serve(async (req) => {
       },
     }));
 
-    // Step 5: TODO - Communicate matching results via LLM
-    // For now, return structured data
+    // Step 5: Communicate matching results via LLM
+    let llmExplanation = null;
+    if (topMatches.length > 0) {
+      llmExplanation = await generateMatchExplanations(
+        {
+          type: "apple",
+          attributes: apple.attributes,
+          preferences: apple.preferences,
+          communication: {
+            attributes: appleAttrs,
+            preferences: applePrefs,
+          },
+        },
+        topMatches
+      );
+    }
 
     return new Response(
       JSON.stringify({
@@ -85,6 +100,7 @@ Deno.serve(async (req) => {
         },
         matches: topMatches,
         totalCandidates: matches.length,
+        llmExplanation,
       }),
       {
         headers: { ...corsHeaders, "Content-Type": "application/json" },
