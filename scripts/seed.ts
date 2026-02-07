@@ -9,12 +9,17 @@ import Surreal from "surrealdb";
 import * as fs from "fs";
 import * as path from "path";
 
-// Load environment variables
-const SURREAL_URL = process.env.SURREAL_URL || "wss://ancient-nebula-06e2vh3dapuftfcj42s0iaboqs.aws-usw2.surreal.cloud/rpc";
-const SURREAL_NAMESPACE = process.env.SURREAL_NAMESPACE || "production";
-const SURREAL_DATABASE = process.env.SURREAL_DATABASE || "matchmaking";
-const SURREAL_USERNAME = process.env.SURREAL_USERNAME || "admin";
-const SURREAL_PASSWORD = process.env.SURREAL_PASSWORD || "Ish2026##";
+// Load environment variables (set via .env.local or shell)
+const SURREAL_URL = process.env.SURREAL_URL;
+const SURREAL_NAMESPACE = process.env.SURREAL_NAMESPACE;
+const SURREAL_DATABASE = process.env.SURREAL_DATABASE;
+const SURREAL_USERNAME = process.env.SURREAL_USERNAME;
+const SURREAL_PASSWORD = process.env.SURREAL_PASSWORD;
+
+if (!SURREAL_URL || !SURREAL_NAMESPACE || !SURREAL_DATABASE || !SURREAL_USERNAME || !SURREAL_PASSWORD) {
+  console.error("Missing required environment variables. See .env.example for reference.");
+  process.exit(1);
+}
 
 interface FruitAttributes {
   size: number | null;

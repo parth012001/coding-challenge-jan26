@@ -71,6 +71,7 @@
   "workspace": {
     "dependencies": [
       "jsr:@supabase/functions-js@^2.4.0",
+      "npm:openai@4",
       "npm:surrealdb@1"
     ]
   }

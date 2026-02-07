@@ -303,9 +303,9 @@ Deno.test("Weights - low-weight mismatch has smaller impact", () => {
 
   const result = calculateWeightedGradientScore(prefsLeaf, attrsNoLeaf);
 
-  // Leaf has weight 0.5, size has weight 2.0
-  // Score = (2.0*1.0 + 0.5*0.0) / (2.0 + 0.5) = 2/2.5 = 80%
-  assertEquals(result.score, 80, "Low-weight mismatch should have smaller impact (80%)");
+  // Dynamic weights: size ~2.583 (narrow range), leaf 0.6 (boolean 1.2x)
+  // Score = (2.583*1.0 + 0.6*0.0) / (2.583 + 0.6) ≈ 81%
+  assertEquals(result.score, 81, "Low-weight mismatch should have smaller impact (81%)");
 });
 
 Deno.test("Weights - breakdown includes correct weight values", () => {
@@ -324,10 +324,10 @@ Deno.test("Weights - breakdown includes correct weight values", () => {
   const stemWeight = result.breakdown.find((b) => b.attribute === "hasStem")?.weight;
   const leafWeight = result.breakdown.find((b) => b.attribute === "hasLeaf")?.weight;
 
-  assertEquals(wormWeight, 5.0, "hasWorm weight should be 5.0");
-  assertEquals(chemWeight, 3.0, "hasChemicals weight should be 3.0");
-  assertEquals(stemWeight, 1.0, "hasStem weight should be 1.0");
-  assertEquals(leafWeight, 0.5, "hasLeaf weight should be 0.5");
+  assertAlmostEquals(wormWeight!, 6.0, 0.001, "hasWorm weight should be 6.0 (5.0 × 1.2)");
+  assertAlmostEquals(chemWeight!, 3.6, 0.001, "hasChemicals weight should be 3.6 (3.0 × 1.2)");
+  assertAlmostEquals(stemWeight!, 1.2, 0.001, "hasStem weight should be 1.2 (1.0 × 1.2)");
+  assertAlmostEquals(leafWeight!, 0.6, 0.001, "hasLeaf weight should be 0.6 (0.5 × 1.2)");
 });
 
 // ============================================================================

@@ -81,9 +81,9 @@ You MUST respond with valid JSON in this exact structure:
     {
       "matchRank": 1,
       "matchId": "the match ID",
-      "overallSummary": "Brief summary of why this is a good match",
-      "whyTheyLikeYou": "Why the matched fruit likes the new fruit",
-      "whyYouLikeThem": "Why the new fruit should like the matched fruit",
+      "overallSummary": "A punchy 8-10 word teaser of the match (e.g. 'Great size match, but missing a stem!')",
+      "whyTheyLikeYou": "2-3 sentences explaining why the matched fruit likes the new fruit. Reference specific attributes, scores, and preferences they care about.",
+      "whyYouLikeThem": "2-3 sentences explaining why the new fruit should like the matched fruit. Reference specific attributes, scores, and what makes them appealing.",
       "compatibilityHighlights": ["highlight1", "highlight2"]
     }
   ],
@@ -190,7 +190,7 @@ export async function generateMatchExplanations(
       ],
       response_format: { type: "json_object" },
       temperature: 0.7,
-      max_tokens: 1500,
+      max_tokens: 2500,
     });
 
     const content = response.choices[0]?.message?.content;

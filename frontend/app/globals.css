@@ -21,6 +21,15 @@
   --color-pear: #84cc16;
   --color-pear-light: #d9f99d;
 
+  /* Glow Colors */
+  --color-apple-glow: rgba(239, 68, 68, 0.3);
+  --color-orange-glow: rgba(249, 115, 22, 0.3);
+  --color-pear-glow: rgba(132, 204, 22, 0.3);
+
+  /* Surface Colors */
+  --color-surface: #ffffff;
+  --color-surface-elevated: #f9fafb;
+
   /* Primary Action */
   --color-primary: #3b82f6;
   --color-primary-hover: #2563eb;
@@ -36,6 +45,39 @@
   --radius-md: 0.5rem;
   --radius-lg: 0.75rem;
   --radius-xl: 1rem;
+
+  /* Z-Index Scale */
+  --z-stage: 1;
+  --z-header: 10;
+  --z-panel: 20;
+  --z-toggle: 25;
+  --z-confetti: 50;
+
+  /* Typography Scale */
+  --text-display: 2.25rem;
+  --text-headline: 1.5rem;
+  --text-title: 1.125rem;
+  --text-body: 0.9375rem;
+  --text-detail: 0.8125rem;
+  --text-caption: 0.6875rem;
+
+  /* Skeleton */
+  --color-skeleton: #e4e4e7;
+
+  /* Glassmorphism */
+  --glass-bg: rgba(255, 255, 255, 0.6);
+  --glass-border: rgba(255, 255, 255, 0.25);
+  --glass-blur: 12px;
+
+  /* Act Gradient Backgrounds */
+  --gradient-idle: radial-gradient(ellipse at 30% 50%, rgba(132, 204, 22, 0.05) 0%, transparent 70%),
+    radial-gradient(ellipse at 70% 50%, rgba(249, 115, 22, 0.04) 0%, transparent 70%);
+  --gradient-act1: radial-gradient(ellipse at 40% 40%, rgba(239, 68, 68, 0.05) 0%, transparent 60%),
+    radial-gradient(ellipse at 60% 60%, rgba(249, 115, 22, 0.04) 0%, transparent 60%);
+  --gradient-act2: radial-gradient(ellipse at 50% 30%, rgba(59, 130, 246, 0.05) 0%, transparent 60%),
+    radial-gradient(ellipse at 50% 70%, rgba(132, 204, 22, 0.04) 0%, transparent 60%);
+  --gradient-act3: radial-gradient(ellipse at 40% 60%, rgba(132, 204, 22, 0.06) 0%, transparent 60%),
+    radial-gradient(ellipse at 60% 40%, rgba(249, 115, 22, 0.04) 0%, transparent 60%);
 }
 
 @media (prefers-color-scheme: dark) {
@@ -47,10 +89,23 @@
     --color-card: #18181b;
     --color-card-hover: #27272a;
 
+    --color-apple-glow: rgba(239, 68, 68, 0.2);
+    --color-orange-glow: rgba(249, 115, 22, 0.2);
+    --color-pear-glow: rgba(132, 204, 22, 0.2);
+
+    --color-surface: #18181b;
+    --color-surface-elevated: #27272a;
+
     --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.3);
     --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.4), 0 2px 4px -2px rgb(0 0 0 / 0.3);
     --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.4),
       0 4px 6px -4px rgb(0 0 0 / 0.3);
+
+    --color-skeleton: #3f3f46;
+
+    --glass-bg: rgba(24, 24, 27, 0.6);
+    --glass-border: rgba(63, 63, 70, 0.3);
+    --glass-blur: 12px;
   }
 }
 
@@ -68,6 +123,7 @@
   --color-apple: var(--color-apple);
   --color-orange: var(--color-orange);
   --color-pear: var(--color-pear);
+  --color-skeleton: var(--color-skeleton);
 
   --font-sans: var(--font-sans);
   --font-mono: var(--font-mono);
@@ -108,8 +164,10 @@ body {
 
 /* Metric Cards */
 .metric-card {
-  background: var(--color-card);
-  border: 1px solid var(--color-border);
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border: 1px solid var(--glass-border);
   border-radius: var(--radius-lg);
   padding: 1.5rem;
   box-shadow: var(--shadow-sm);
@@ -142,6 +200,11 @@ body {
   transform: scale(0.98);
 }
 
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
 .btn-secondary {
   background: transparent;
   color: var(--color-foreground);
@@ -157,6 +220,23 @@ body {
 .btn-secondary:hover {
   background: var(--color-card-hover);
   border-color: var(--color-muted);
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--color-muted);
+  padding: 0.625rem 1.25rem;
+  border-radius: var(--radius-md);
+  font-weight: 500;
+  font-size: 0.875rem;
+  border: none;
+  transition: background-color 0.2s ease, color 0.2s ease;
+  cursor: pointer;
+}
+
+.btn-ghost:hover {
+  background: var(--color-card-hover);
+  color: var(--color-foreground);
 }
 
 /* Text Colors */
@@ -177,7 +257,195 @@ body {
 }
 
 /* =============================================================================
-   UTILITY ANIMATIONS
+   CHAT BUBBLES
+   ============================================================================= */
+
+.chat-bubble {
+  background: var(--color-surface-elevated);
+  border-radius: var(--radius-lg);
+  padding: 1rem 1.25rem;
+  position: relative;
+  max-width: 520px;
+  line-height: 1.6;
+  font-size: 0.9rem;
+}
+
+.chat-bubble--apple {
+  border-left: 3px solid var(--color-apple);
+}
+
+.chat-bubble--orange {
+  border-left: 3px solid var(--color-orange);
+}
+
+.chat-bubble--matchmaker {
+  border-left: 3px solid var(--color-pear);
+  background: color-mix(in srgb, var(--color-pear-light) 15%, var(--color-surface-elevated));
+}
+
+/* =============================================================================
+   MATCH CARDS
+   ============================================================================= */
+
+.match-card {
+  perspective: 1000px;
+  cursor: pointer;
+}
+
+.match-card__inner {
+  position: relative;
+  width: 100%;
+  min-height: 280px;
+  transition: transform 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+  transform-style: preserve-3d;
+}
+
+.match-card--flipped .match-card__inner {
+  transform: rotateY(180deg);
+}
+
+.match-card__face {
+  backface-visibility: hidden;
+  border-radius: var(--radius-lg);
+  border: 1px solid var(--color-border);
+  background: var(--color-card);
+  padding: 1.25rem;
+  box-shadow: var(--shadow-sm);
+}
+
+.match-card__back {
+  position: absolute;
+  inset: 0;
+  transform: rotateY(180deg);
+}
+
+/* =============================================================================
+   DASHBOARD PANEL
+   ============================================================================= */
+
+/* Base: tablet (768-1023px) — right slide-over */
+.dashboard-panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  width: 420px;
+  height: 100vh;
+  background: var(--color-surface);
+  border-left: 1px solid var(--color-border);
+  box-shadow: var(--shadow-lg);
+  z-index: var(--z-panel);
+  transform: translateX(100%);
+  transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  overflow-y: auto;
+}
+
+.dashboard-panel.open {
+  transform: translateX(0);
+}
+
+/* Mobile (<768px) — bottom sheet */
+@media (max-width: 768px) {
+  .dashboard-panel {
+    width: 100%;
+    height: auto;
+    max-height: 60vh;
+    top: auto;
+    bottom: 0;
+    left: 0;
+    border-left: none;
+    border-top: 1px solid var(--color-border);
+    border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+    transform: translateY(100%);
+  }
+
+  .dashboard-panel.open {
+    transform: translateY(0);
+  }
+}
+
+/* Desktop (≥1024px) — sticky sidebar, always visible */
+@media (min-width: 1024px) {
+  .dashboard-panel,
+  .dashboard-panel.open {
+    position: sticky;
+    top: 0;
+    right: auto;
+    width: 380px;
+    min-width: 380px;
+    height: 100vh;
+    z-index: auto;
+    transform: none;
+    box-shadow: none;
+    transition: none;
+    border-left: 1px solid var(--color-border);
+  }
+}
+
+/* =============================================================================
+   COMPATIBILITY TAGS
+   ============================================================================= */
+
+.compat-tag {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.25rem 0.75rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 500;
+  background: color-mix(in srgb, var(--color-pear-light) 30%, var(--color-surface));
+  color: color-mix(in srgb, var(--color-pear) 80%, var(--color-foreground));
+  border: 1px solid color-mix(in srgb, var(--color-pear) 20%, transparent);
+}
+
+/* =============================================================================
+   ACT INDICATOR (styled inline in component)
+   ============================================================================= */
+
+/* =============================================================================
+   CONSTELLATION LAYOUT
+   ============================================================================= */
+
+.constellation-container { position: relative; width: 100%; max-width: 560px; }
+.constellation-fruit { position: absolute; z-index: 1; }
+.constellation-svg { position: absolute; inset: 0; z-index: 0; pointer-events: none; overflow: visible; }
+
+/* =============================================================================
+   CONNECTION LINES
+   ============================================================================= */
+
+.connection-line {
+  fill: none;
+  stroke-linecap: round;
+}
+
+.thread-line {
+  fill: none;
+  stroke-linecap: round;
+  pointer-events: stroke;
+}
+
+/* =============================================================================
+   SHINE EFFECTS
+   ============================================================================= */
+
+.shine-dull {
+  filter: brightness(0.85) saturate(0.8);
+}
+
+.shine-neutral {
+  filter: brightness(1) saturate(1);
+}
+
+.shine-shiny {
+  filter: brightness(1.1) saturate(1.2);
+}
+
+.shine-extraShiny {
+  filter: brightness(1.2) saturate(1.4);
+}
+
+/* =============================================================================
+   KEYFRAME ANIMATIONS
    ============================================================================= */
 
 @keyframes fade-in {
@@ -207,6 +475,75 @@ body {
 
 .animate-pulse-subtle {
   animation: pulse-subtle 2s ease-in-out infinite;
+}
+
+@keyframes typewriter-cursor {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+@keyframes glow-pulse {
+  0%, 100% { box-shadow: 0 0 8px var(--color-pear-glow); }
+  50% { box-shadow: 0 0 20px var(--color-pear-glow); }
+}
+
+@keyframes line-dash {
+  to { stroke-dashoffset: 0; }
+}
+
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-6px); }
+}
+
+@keyframes shimmer {
+  0% { background-position: -200% 0; }
+  100% { background-position: 200% 0; }
+}
+
+@keyframes score-ring-fill {
+  from { stroke-dashoffset: var(--ring-circumference); }
+  to { stroke-dashoffset: var(--ring-offset); }
+}
+
+@keyframes wiggle {
+  0%, 100% { transform: rotate(0deg); }
+  25% { transform: rotate(5deg); }
+  75% { transform: rotate(-5deg); }
+}
+
+.animate-glow-pulse {
+  animation: glow-pulse 2s ease-in-out infinite;
+}
+
+.animate-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+.animate-wiggle {
+  animation: wiggle 1s ease-in-out infinite;
+}
+
+.animate-cursor-blink {
+  animation: typewriter-cursor 0.8s step-end infinite;
+}
+
+@keyframes breathe {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.04); }
+}
+
+.animate-breathe {
+  animation: breathe 3s ease-in-out infinite;
+}
+
+/* Card Variants */
+.card--chart {
+  padding: 1.25rem;
+  background: var(--glass-bg);
+  backdrop-filter: blur(var(--glass-blur));
+  -webkit-backdrop-filter: blur(var(--glass-blur));
+  border-color: var(--glass-border);
 }
 
 /* =============================================================================

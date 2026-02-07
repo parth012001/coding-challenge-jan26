@@ -5,11 +5,11 @@
 import Surreal from "surrealdb";
 
 // Environment variables (set these in Supabase dashboard or .env for local dev)
-const SURREAL_URL = Deno.env.get("SURREAL_URL") || "wss://ancient-nebula-06e2vh3dapuftfcj42s0iaboqs.aws-usw2.surreal.cloud/rpc";
-const SURREAL_NAMESPACE = Deno.env.get("SURREAL_NAMESPACE") || "production";
-const SURREAL_DATABASE = Deno.env.get("SURREAL_DATABASE") || "matchmaking";
-const SURREAL_USERNAME = Deno.env.get("SURREAL_USERNAME") || "admin";
-const SURREAL_PASSWORD = Deno.env.get("SURREAL_PASSWORD") || "Ish2026##";
+const SURREAL_URL = Deno.env.get("SURREAL_URL") || "";
+const SURREAL_NAMESPACE = Deno.env.get("SURREAL_NAMESPACE") || "";
+const SURREAL_DATABASE = Deno.env.get("SURREAL_DATABASE") || "";
+const SURREAL_USERNAME = Deno.env.get("SURREAL_USERNAME") || "";
+const SURREAL_PASSWORD = Deno.env.get("SURREAL_PASSWORD") || "";
 
 // =============================================================================
 // WEIGHTED GRADIENT SCORING CONSTANTS
@@ -25,6 +25,15 @@ const ATTRIBUTE_WEIGHTS: Record<string, number> = {
   hasStem: 1.0,       // Minor
   hasLeaf: 0.5,       // Least important
 };
+
+// Dynamic weight selectivity amplifiers
+const SELECTIVITY_AMPLIFIER = 0.5;         // ranges + shine (max 1.5x base)
+const BOOLEAN_SELECTIVITY_AMPLIFIER = 0.2;  // booleans (max 1.2x base)
+
+// Domain boundaries (from generateFruit.ts constants)
+const SIZE_DOMAIN = { min: 2, max: 14, range: 12 };
+const WEIGHT_DOMAIN = { min: 50, max: 350, range: 300 };
+const SHINE_TOTAL_OPTIONS = 4;
 
 // Tolerances for exponential decay (based on data distributions)
 const RANGE_TOLERANCES: Record<string, number> = {
@@ -249,6 +258,57 @@ function calculateBooleanScore(
 }
 
 /**
+ * Calculate dynamic weight for an attribute based on preference selectivity.
+ * Narrow preferences (high selectivity) get amplified weights.
+ * Formula: baseWeight * (1 + amplifier * selectivity)
+ */
+export function calculateDynamicWeight(
+  attribute: string,
+  preferences: FruitRecord["preferences"]
+): number {
+  const baseWeight = ATTRIBUTE_WEIGHTS[attribute];
+  if (baseWeight === undefined) return 0;
+
+  switch (attribute) {
+    case "size": {
+      const pref = preferences.size;
+      if (!pref) return baseWeight;
+      const effectiveMin = pref.min ?? SIZE_DOMAIN.min;
+      const effectiveMax = pref.max ?? SIZE_DOMAIN.max;
+      const rangeWidth = effectiveMax - effectiveMin;
+      const selectivity = 1 - (rangeWidth / SIZE_DOMAIN.range);
+      return baseWeight * (1 + SELECTIVITY_AMPLIFIER * selectivity);
+    }
+    case "weight": {
+      const pref = preferences.weight;
+      if (!pref) return baseWeight;
+      const effectiveMin = pref.min ?? WEIGHT_DOMAIN.min;
+      const effectiveMax = pref.max ?? WEIGHT_DOMAIN.max;
+      const rangeWidth = effectiveMax - effectiveMin;
+      const selectivity = 1 - (rangeWidth / WEIGHT_DOMAIN.range);
+      return baseWeight * (1 + SELECTIVITY_AMPLIFIER * selectivity);
+    }
+    case "shineFactor": {
+      const pref = preferences.shineFactor;
+      if (pref === undefined) return baseWeight;
+      const acceptedCount = Array.isArray(pref) ? pref.length : 1;
+      const selectivity = 1 - (acceptedCount / SHINE_TOTAL_OPTIONS);
+      return baseWeight * (1 + SELECTIVITY_AMPLIFIER * selectivity);
+    }
+    case "hasStem":
+    case "hasLeaf":
+    case "hasWorm":
+    case "hasChemicals": {
+      if (preferences[attribute] === undefined) return baseWeight;
+      // Binary: specified = maximally selective (selectivity = 1.0)
+      return baseWeight * (1 + BOOLEAN_SELECTIVITY_AMPLIFIER * 1.0);
+    }
+    default:
+      return baseWeight;
+  }
+}
+
+/**
  * Calculate weighted gradient score between preferences and attributes
  * Returns a detailed breakdown with scores for each attribute
  */
@@ -264,7 +324,7 @@ export function calculateWeightedGradientScore(
 
   // Check size preference
   if (preferences.size !== undefined) {
-    const weight = ATTRIBUTE_WEIGHTS.size;
+    const weight = calculateDynamicWeight("size", preferences);
     totalWeight += weight;
     attributeCount++;
 
@@ -300,7 +360,7 @@ export function calculateWeightedGradientScore(
 
   // Check weight preference
   if (preferences.weight !== undefined) {
-    const weight = ATTRIBUTE_WEIGHTS.weight;
+    const weight = calculateDynamicWeight("weight", preferences);
     totalWeight += weight;
     attributeCount++;
 
@@ -338,7 +398,7 @@ export function calculateWeightedGradientScore(
   const booleanPrefs: (keyof FruitRecord["preferences"])[] = ["hasStem", "hasLeaf", "hasWorm", "hasChemicals"];
   for (const pref of booleanPrefs) {
     if (preferences[pref] !== undefined) {
-      const weight = ATTRIBUTE_WEIGHTS[pref];
+      const weight = calculateDynamicWeight(pref, preferences);
       totalWeight += weight;
       attributeCount++;
 
@@ -374,7 +434,7 @@ export function calculateWeightedGradientScore(
 
   // Check shine factor preference
   if (preferences.shineFactor !== undefined) {
-    const weight = ATTRIBUTE_WEIGHTS.shineFactor;
+    const weight = calculateDynamicWeight("shineFactor", preferences);
     totalWeight += weight;
     attributeCount++;
 

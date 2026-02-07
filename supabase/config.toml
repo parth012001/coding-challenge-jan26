@@ -359,8 +359,14 @@ inspector_port = 8083
 # The Deno major version to use.
 deno_version = 2
 
-# [edge_runtime.secrets]
-# secret_key = "env(SECRET_VALUE)"
+[edge_runtime.secrets]
+OPENAI_API_KEY = "env(OPENAI_API_KEY)"
+OPENAI_MODEL = "env(OPENAI_MODEL)"
+SURREAL_URL = "env(SURREAL_URL)"
+SURREAL_NAMESPACE = "env(SURREAL_NAMESPACE)"
+SURREAL_DATABASE = "env(SURREAL_DATABASE)"
+SURREAL_USERNAME = "env(SURREAL_USERNAME)"
+SURREAL_PASSWORD = "env(SURREAL_PASSWORD)"
 
 [analytics]
 enabled = false
@@ -383,7 +389,7 @@ s3_secret_key = "env(S3_SECRET_KEY)"
 
 [functions.get-incoming-apple]
 enabled = true
-verify_jwt = true
+verify_jwt = false
 import_map = "./functions/get-incoming-apple/deno.json"
 # Uncomment to specify a custom file path to the entrypoint.
 # Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
@@ -394,7 +400,7 @@ entrypoint = "./functions/get-incoming-apple/index.ts"
 
 [functions.get-incoming-orange]
 enabled = true
-verify_jwt = true
+verify_jwt = false
 import_map = "./functions/get-incoming-orange/deno.json"
 # Uncomment to specify a custom file path to the entrypoint.
 # Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx

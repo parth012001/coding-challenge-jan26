@@ -1,92 +1,54 @@
 import { create } from "zustand";
 import { devtools, persist } from "zustand/middleware";
+import type {
+  FruitType,
+  Act,
+  Conversation,
+  ConversationStatus,
+  MatchResult,
+  LLMMatchResponse,
+  LLMErrorResponse,
+  FruitAttributes,
+  FruitPreferences,
+  FruitCommunication,
+} from "./types";
+import { generateId } from "./utils";
 
 // =============================================================================
-// ⚠️  DISCLAIMER
-// =============================================================================
-// This store structure is just a STARTING POINT. Feel free to:
-// - Completely redesign the state shape
-// - Remove types/fields that don't fit your solution
-// - Add your own types and actions
-// - Use a different state management approach entirely
-//
-// The types below are examples based on what we imagined - your implementation
-// may look completely different, and that's great!
+// STATE INTERFACE
 // =============================================================================
 
-// =============================================================================
-// TYPES (Examples - modify or replace these!)
-// =============================================================================
+interface OrchardState {
+  // Conversation
+  currentConversation: Conversation | null;
+  currentAct: Act;
+  conversationHistory: Conversation[];
 
-export interface Apple {
-  id: string;
-  name: string;
-  attributes: Record<string, unknown>;
-  preferences: Record<string, unknown>;
-  createdAt: Date;
-}
-
-export interface Orange {
-  id: string;
-  name: string;
-  attributes: Record<string, unknown>;
-  preferences: Record<string, unknown>;
-  createdAt: Date;
-}
-
-export interface Match {
-  id: string;
-  appleId: string;
-  orangeId: string;
-  score: number;
-  status: "pending" | "confirmed" | "rejected";
-  createdAt: Date;
-}
-
-export interface Conversation {
-  id: string;
-  type: "apple" | "orange";
-  fruitId: string;
-  messages: ConversationMessage[];
-  status: "active" | "completed" | "error";
-  createdAt: Date;
-}
-
-export interface ConversationMessage {
-  id: string;
-  role: "system" | "user" | "assistant";
-  content: string;
-  timestamp: Date;
-}
-
-// =============================================================================
-// STORE STATE
-// =============================================================================
-
-interface MatchmakingState {
-  // Data
-  apples: Apple[];
-  oranges: Orange[];
-  matches: Match[];
-  conversations: Conversation[];
-
-  // UI State
-  activeConversationId: string | null;
+  // UI
   isLoading: boolean;
   error: string | null;
+  dashboardOpen: boolean;
+  fruitTypeChoice: FruitType;
 
   // Actions
-  setApples: (apples: Apple[]) => void;
-  setOranges: (oranges: Orange[]) => void;
-  addMatch: (match: Match) => void;
-  setActiveConversation: (id: string | null) => void;
-  addConversation: (conversation: Conversation) => void;
-  addMessageToConversation: (
-    conversationId: string,
-    message: ConversationMessage
+  startConversation: (fruitType: FruitType) => string;
+  setConversationData: (
+    id: string,
+    fruit: {
+      id: string;
+      attributes: FruitAttributes;
+      preferences: FruitPreferences;
+      communication: FruitCommunication;
+    },
+    matches: MatchResult[],
+    totalCandidates: number,
+    llmExplanation: LLMMatchResponse | LLMErrorResponse | null
   ) => void;
-  setLoading: (isLoading: boolean) => void;
+  advanceAct: () => void;
+  completeConversation: () => void;
   setError: (error: string | null) => void;
+  toggleDashboard: () => void;
+  setFruitTypeChoice: (type: FruitType) => void;
   reset: () => void;
 }
 
@@ -95,66 +57,121 @@ interface MatchmakingState {
 // =============================================================================
 
 const initialState = {
-  apples: [],
-  oranges: [],
-  matches: [],
-  conversations: [],
-  activeConversationId: null,
+  currentConversation: null as Conversation | null,
+  currentAct: 1 as Act,
+  conversationHistory: [] as Conversation[],
   isLoading: false,
-  error: null,
+  error: null as string | null,
+  dashboardOpen: false,
+  fruitTypeChoice: "apple" as FruitType,
 };
 
 // =============================================================================
 // STORE
 // =============================================================================
 
-export const useMatchmakingStore = create<MatchmakingState>()(
+export const useOrchardStore = create<OrchardState>()(
   devtools(
     persist(
-      (set) => ({
+      (set, get) => ({
         ...initialState,
 
-        setApples: (apples) => set({ apples }),
+        startConversation: (fruitType: FruitType) => {
+          const id = generateId();
+          set({
+            currentConversation: {
+              id,
+              fruitType,
+              status: "fetching",
+              fruit: null,
+              matches: [],
+              totalCandidates: 0,
+              llmExplanation: null,
+              createdAt: new Date().toISOString(),
+            },
+            currentAct: 1,
+            isLoading: true,
+            error: null,
+          });
+          return id;
+        },
 
-        setOranges: (oranges) => set({ oranges }),
+        setConversationData: (id, fruit, matches, totalCandidates, llmExplanation) => {
+          const conv = get().currentConversation;
+          if (!conv || conv.id !== id) return;
 
-        addMatch: (match) =>
-          set((state) => ({
-            matches: [...state.matches, match],
-          })),
+          const nextStatus: ConversationStatus =
+            matches.length === 0 ? "complete" : "act1";
 
-        setActiveConversation: (id) => set({ activeConversationId: id }),
+          set({
+            currentConversation: {
+              ...conv,
+              status: nextStatus,
+              fruit,
+              matches,
+              totalCandidates,
+              llmExplanation,
+            },
+            isLoading: false,
+          });
+        },
 
-        addConversation: (conversation) =>
-          set((state) => ({
-            conversations: [...state.conversations, conversation],
-          })),
+        advanceAct: () => {
+          const { currentAct, currentConversation: conv } = get();
+          if (!conv) return;
 
-        addMessageToConversation: (conversationId, message) =>
-          set((state) => ({
-            conversations: state.conversations.map((conv) =>
-              conv.id === conversationId
-                ? { ...conv, messages: [...conv.messages, message] }
-                : conv
-            ),
-          })),
+          if (currentAct === 1) {
+            set({
+              currentAct: 2,
+              currentConversation: { ...conv, status: "act2" },
+            });
+          } else if (currentAct === 2) {
+            set({
+              currentAct: 3,
+              currentConversation: { ...conv, status: "act3" },
+            });
+          }
+        },
 
-        setLoading: (isLoading) => set({ isLoading }),
+        completeConversation: () => {
+          const conv = get().currentConversation;
+          if (!conv) return;
 
-        setError: (error) => set({ error }),
+          const completed = { ...conv, status: "complete" as ConversationStatus };
+          const history = [completed, ...get().conversationHistory].slice(0, 50);
 
-        reset: () => set(initialState),
+          set({
+            currentConversation: completed,
+            conversationHistory: history,
+          });
+        },
+
+        setError: (error) => {
+          const conv = get().currentConversation;
+          set({
+            error,
+            isLoading: false,
+            currentConversation: conv
+              ? { ...conv, status: "error" }
+              : null,
+          });
+        },
+
+        toggleDashboard: () => set((s) => ({ dashboardOpen: !s.dashboardOpen })),
+
+        setFruitTypeChoice: (fruitTypeChoice) => set({ fruitTypeChoice }),
+
+        reset: () => set({ ...initialState, conversationHistory: get().conversationHistory }),
       }),
       {
-        name: "matchmaking-storage",
-        // Only persist specific fields
+        name: "orchard-storage",
         partialize: (state) => ({
-          conversations: state.conversations,
-          matches: state.matches,
+          conversationHistory: state.conversationHistory,
+          fruitTypeChoice: state.fruitTypeChoice,
         }),
       }
     ),
-    { name: "MatchmakingStore" }
+    { name: "OrchardStore" }
   )
 );
 
@@ -162,17 +179,24 @@ export const useMatchmakingStore = create<MatchmakingState>()(
 // SELECTORS
 // =============================================================================
 
-// Example selectors for computed values
-export const selectActiveConversation = (state: MatchmakingState) =>
-  state.conversations.find((c) => c.id === state.activeConversationId);
+// Stable default references — never create new objects/arrays in selectors
+const EMPTY_MATCHES: MatchResult[] = [];
 
-export const selectMatchCount = (state: MatchmakingState) =>
-  state.matches.length;
+export const selectCurrentFruit = (s: OrchardState) =>
+  s.currentConversation?.fruit ?? null;
 
-export const selectSuccessRate = (state: MatchmakingState) => {
-  const confirmed = state.matches.filter((m) => m.status === "confirmed").length;
-  return state.matches.length > 0
-    ? Math.round((confirmed / state.matches.length) * 100)
-    : 0;
+export const selectMatches = (s: OrchardState) =>
+  s.currentConversation?.matches ?? EMPTY_MATCHES;
+
+export const selectLLMExplanation = (s: OrchardState) =>
+  s.currentConversation?.llmExplanation ?? null;
+
+export const selectIsActive = (s: OrchardState) => {
+  const status = s.currentConversation?.status;
+  return (
+    status === "fetching" ||
+    status === "act1" ||
+    status === "act2" ||
+    status === "act3"
+  );
 };
-
